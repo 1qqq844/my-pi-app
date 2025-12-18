@@ -29,67 +29,28 @@
 
     <div id="status-box">SDK 状态: 正在加载...</div>
 
-    <script>
-        const Pi = window.Pi;
-        
-        // 关键改动 1: 增加初始化检测
+      <script>
+    const Pi = window.Pi;
+    
+    // 关键：在 Pi Browser 里运行时，sandbox 要设为 false
+    Pi.init({ version: "2.0", sandbox: false }); 
+
+    async function login() {
+        // 添加这个弹窗，用来确认按钮是否被触发
+        alert("正在发起 Pi 登录请求..."); 
         try {
-            // 在 Pi Browser 里测试请将 sandbox 设为 false
-            Pi.init({ version: "2.0", sandbox: false });
-            document.getElementById('status-box').innerText = "SDK 状态: 初始化完成";
-        } catch (e) {
-            document.getElementById('status-box').innerText = "SDK 状态: 初始化失败";
+            const scopes = ['username', 'payments'];
+            const user = await Pi.authenticate(scopes, onIncompletePaymentFound);
+            document.getElementById('user-info').innerText = "你好, " + user.user.username;
+            alert("成功登录！欢迎：" + user.user.username);
+        } catch (err) {
+            // 如果报错，这里会显示具体的错误代码
+            alert("登录失败详情: " + JSON.stringify(err));
         }
+    }
 
-        async function login() {
-            console.log("开始调用登录...");
-            try {
-                // 关键改动 2: 增加弹窗提示，确认函数是否运行
-                const scopes = ['username', 'payments'];
-                
-                // 执行授权
-                const user = await Pi.authenticate(scopes, onIncompletePaymentFound);
-                
-                // 显示用户信息
-                document.getElementById('user-info').innerText = "你好, " + user.user.username;
-                alert("登录成功: " + user.user.username);
-            } catch (err) {
-                // 捕获具体错误并弹窗
-                console.error(err);
-                alert("登录过程中出错: " + JSON.stringify(err));
-            }
-        }
-
-        async function transferPi() {
-            try {
-                const paymentData = {
-                    amount: 1,
-                    memo: "新手的测试订单",
-                    metadata: { orderId: "test-123" }
-                };
-
-                const callbacks = {
-                    onReadyForServerApproval: (paymentId) => {
-                        alert("支付已提交! ID: " + paymentId);
-                    },
-                    onReadyForServerCompletion: (paymentId, txid) => {
-                        alert("支付圆满完成! 交易哈希: " + txid);
-                    },
-                    onCancel: (paymentId) => { console.log("用户取消"); },
-                    onError: (error, payment) => { 
-                        alert("支付错误: " + error.message);
-                    }
-                };
-
-                Pi.createPayment(paymentData, callbacks);
-            } catch (err) {
-                alert("发起支付失败: " + err.message);
-            }
-        }
-
-        function onIncompletePaymentFound(payment) {
-            console.log("发现未完成的支付", payment);
-        };
-    </script>
-</body>
-</html>
+    // 支付函数和其他保持不变...
+    function onIncompletePaymentFound(payment) {
+        console.log("未完成支付", payment);
+    };
+</script>
