@@ -6,67 +6,87 @@
     <title>我的第一个 Pi DApp</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <style>
-        body { font-family: sans-serif; text-align: center; padding-top: 50px; }
-        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background: #673ab7; color: white; border: none; border-radius: 5px; }
-        #user-info { margin-top: 20px; color: green; }
+        body { font-family: sans-serif; text-align: center; padding-top: 50px; background-color: #f4f4f9; }
+        .card { background: white; margin: 20px auto; padding: 20px; width: 80%; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        button { padding: 12px 24px; font-size: 16px; cursor: pointer; background: #673ab7; color: white; border: none; border-radius: 5px; margin: 10px; }
+        button:active { background: #512da8; }
+        #status-box { color: #666; font-size: 12px; margin-top: 20px; }
     </style>
 </head>
 <body>
 
-    <h1>欢迎来到我的 Pi DApp</h1>
-    
-    <button onclick="login()">点击登录 Pi 账号</button>
-    
-    <div id="user-info"></div>
+    <div class="card">
+        <h1>我的 Pi DApp 测试</h1>
+        <p id="user-info">请先登录</p>
+        <button onclick="login()">点击登录 Pi 账号</button>
+    </div>
 
-    <hr>
+    <div class="card">
+        <h3>测试支付</h3>
+        <p>支付 1 Test-Pi</p>
+        <button onclick="transferPi()">发起支付</button>
+    </div>
 
-    <h3>支持一下：支付 1 Test-Pi</h3>
-    <button onclick="transferPi()">发起支付</button>
+    <div id="status-box">SDK 状态: 正在加载...</div>
 
     <script>
-        // 1. 初始化 SDK (sandbox: true 代表测试模式)
         const Pi = window.Pi;
-        Pi.init({ version: "2.0", sandbox: true });
+        
+        // 关键改动 1: 增加初始化检测
+        try {
+            // 在 Pi Browser 里测试请将 sandbox 设为 false
+            Pi.init({ version: "2.0", sandbox: false });
+            document.getElementById('status-box').innerText = "SDK 状态: 初始化完成";
+        } catch (e) {
+            document.getElementById('status-box').innerText = "SDK 状态: 初始化失败";
+        }
 
-        // 2. 登录函数
         async function login() {
+            console.log("开始调用登录...");
             try {
+                // 关键改动 2: 增加弹窗提示，确认函数是否运行
                 const scopes = ['username', 'payments'];
+                
+                // 执行授权
                 const user = await Pi.authenticate(scopes, onIncompletePaymentFound);
+                
+                // 显示用户信息
                 document.getElementById('user-info').innerText = "你好, " + user.user.username;
-                console.log("登录成功", user);
+                alert("登录成功: " + user.user.username);
             } catch (err) {
-                alert("登录失败，请在 Pi Browser 中打开");
+                // 捕获具体错误并弹窗
+                console.error(err);
+                alert("登录过程中出错: " + JSON.stringify(err));
             }
         }
 
-        // 3. 支付函数
         async function transferPi() {
-            const paymentData = {
-                amount: 1,
-                memo: "这是给新手的测试订单",
-                metadata: { orderId: 12345 }
-            };
+            try {
+                const paymentData = {
+                    amount: 1,
+                    memo: "新手的测试订单",
+                    metadata: { orderId: "test-123" }
+                };
 
-            const callbacks = {
-                onReadyForServerApproval: (paymentId) => {
-                    console.log("等待服务器批准:", paymentId);
-                    // 提示：正式开发需要后端处理，小白测试可以先看控制台
-                    alert("支付已提交，等待处理 (ID: " + paymentId + ")");
-                },
-                onReadyForServerCompletion: (paymentId, txid) => {
-                    console.log("支付完成:", txid);
-                    alert("支付成功！感谢支持。");
-                },
-                onCancel: (paymentId) => { console.log("用户取消支付"); },
-                onError: (error, payment) => { console.error("支付出错", error); }
-            };
+                const callbacks = {
+                    onReadyForServerApproval: (paymentId) => {
+                        alert("支付已提交! ID: " + paymentId);
+                    },
+                    onReadyForServerCompletion: (paymentId, txid) => {
+                        alert("支付圆满完成! 交易哈希: " + txid);
+                    },
+                    onCancel: (paymentId) => { console.log("用户取消"); },
+                    onError: (error, payment) => { 
+                        alert("支付错误: " + error.message);
+                    }
+                };
 
-            Pi.createPayment(paymentData, callbacks);
+                Pi.createPayment(paymentData, callbacks);
+            } catch (err) {
+                alert("发起支付失败: " + err.message);
+            }
         }
 
-        // 4. 处理未完成的支付（SDK要求必须有此回调）
         function onIncompletePaymentFound(payment) {
             console.log("发现未完成的支付", payment);
         };
