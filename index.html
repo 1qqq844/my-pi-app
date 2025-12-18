@@ -1,11 +1,15 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-<head<meta name="pi-sdk-version" content="2.0">
-<link rel="canonical" href="https://1qqq844.github.io/my-pi-app/">><meta name="pi-sdk-version" content="2.0">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>我的第一个 Pi DApp</title>
+    
+    <meta name="pi-sdk-version" content="2.0">
+    <link rel="canonical" href="https://1qqq844.github.io/my-pi-app/">
+
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    
     <style>
         body { font-family: sans-serif; text-align: center; padding-top: 50px; background-color: #f4f4f9; }
         .card { background: white; margin: 20px auto; padding: 20px; width: 80%; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
@@ -24,38 +28,70 @@
 
     <div class="card">
         <h3>测试支付</h3>
-        <p>支付 1 Test-Pi</p>
+        <p>支付 0.1 Test-Pi</p>
         <button onclick="transferPi()">发起支付</button>
     </div>
 
-    <div id="status-box">SDK 状态: 正在加载...</div>
+    <div id="status-box">SDK 状态: 正在初始化...</div>
 
-      <script>
-    const Pi = window.Pi;
-    
-    // 关键：在 Pi Browser 里运行时，sandbox 要设为 false
-    // 虽然不是强制，但有助于系统识别你的身份
-// const apiKey = "你刚才生成的Key";Pi.init({ version: "2.0", sandbox: false }); 
+    <script>
+        const Pi = window.Pi;
 
-    async function login() {
-        // 添加这个弹窗，用来确认按钮是否被触发
-        alert("正在发起 Pi 登录请求..."); 
+        // 初始化 SDK
         try {
-            const scopes = ['username', 'payments'];
-            const user = await Pi.authenticate(scopes, onIncompletePaymentFound);
-            document.getElementById('user-info').innerText = "你好, " + user.user.username;
-            alert("成功登录！欢迎：" + user.user.username);
+            // 在 Pi Browser 测试请保持 sandbox 为 false
+            Pi.init({ version: "2.0", sandbox: false });
+            document.getElementById('status-box').innerText = "SDK 状态: 初始化成功";
         } catch (err) {
-            // 如果报错，这里会显示具体的错误代码
-            alert("登录失败详情: " + JSON.stringify(err));
+            document.getElementById('status-box').innerText = "SDK 状态: 初始化失败";
         }
-    }
 
-    // 支付函数和其他保持不变...
-    function onIncompletePaymentFound(payment) {
-        console.log("未完成支付", payment);
-    };
-</script>
+        // 登录函数
+        async function login() {
+            alert("正在发起 Pi 登录请求..."); 
+            try {
+                const scopes = ['username', 'payments'];
+                const user = await Pi.authenticate(scopes, onIncompletePaymentFound);
+                document.getElementById('user-info').innerText = "你好, " + user.user.username;
+                alert("成功登录！欢迎：" + user.user.username);
+            } catch (err) {
+                alert("登录失败详情: " + JSON.stringify(err));
+            }
+        }
+
+        // 支付函数
+        async function transferPi() {
+            try {
+                const paymentData = {
+                    amount: 0.1,
+                    memo: "测试订单-购买手工面包",
+                    metadata: { orderId: "Bread-001" }
+                };
+
+                const callbacks = {
+                    onReadyForServerApproval: (paymentId) => {
+                        alert("支付已创建，等待服务器批准。ID: " + paymentId);
+                    },
+                    onReadyForServerCompletion: (paymentId, txid) => {
+                        alert("支付圆满完成！交易哈希: " + txid);
+                    },
+                    onCancel: (paymentId) => { alert("用户取消了支付"); },
+                    onError: (error, payment) => { alert("支付错误: " + error.message); }
+                };
+
+                alert("正在拉起钱包...");
+                Pi.createPayment(paymentData, callbacks);
+            } catch (err) {
+                alert("发起支付失败: " + err.message);
+            }
+        }
+
+        function onIncompletePaymentFound(payment) {
+            console.log("未完成支付", payment);
+        };
+    </script>
+</body>
+</html>
 
 
 
