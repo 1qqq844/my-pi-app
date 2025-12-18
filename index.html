@@ -1,9 +1,11 @@
+
+
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的第一个 Pi DApp</title>
+    <title>麦霸面包店 - Pi 测试</title>
     
     <meta name="pi-sdk-version" content="2.0">
     <link rel="canonical" href="https://1qqq844.github.io/my-pi-app/">
@@ -21,14 +23,14 @@
 <body>
 
     <div class="card">
-        <h1>我的 Pi DApp 测试</h1>
-        <p id="user-info">请先登录</p>
+        <h1>麦霸面包店</h1>
+        <p id="user-info">欢迎光临，请先登录</p>
         <button onclick="login()">点击登录 Pi 账号</button>
     </div>
 
     <div class="card">
-        <h3>测试支付</h3>
-        <p>支付 0.1 Test-Pi</p>
+        <h3>在线下单</h3>
+        <p>手工面包：0.1 Test-Pi</p>
         <button onclick="transferPi()">发起支付</button>
     </div>
 
@@ -39,7 +41,6 @@
 
         // 初始化 SDK
         try {
-            // 在 Pi Browser 测试请保持 sandbox 为 false
             Pi.init({ version: "2.0", sandbox: false });
             document.getElementById('status-box').innerText = "SDK 状态: 初始化成功";
         } catch (err) {
@@ -48,14 +49,14 @@
 
         // 登录函数
         async function login() {
-            alert("正在发起 Pi 登录请求..."); 
+            alert("准备调起 Pi 登录授权..."); 
             try {
                 const scopes = ['username', 'payments'];
                 const user = await Pi.authenticate(scopes, onIncompletePaymentFound);
                 document.getElementById('user-info').innerText = "你好, " + user.user.username;
-                alert("成功登录！欢迎：" + user.user.username);
+                alert("登录成功！欢迎：" + user.user.username);
             } catch (err) {
-                alert("登录失败详情: " + JSON.stringify(err));
+                alert("登录失败: " + JSON.stringify(err));
             }
         }
 
@@ -64,7 +65,7 @@
             try {
                 const paymentData = {
                     amount: 0.1,
-                    memo: "测试订单-购买手工面包",
+                    memo: "购买麦霸手工面包",
                     metadata: { orderId: "Bread-001" }
                 };
 
@@ -73,16 +74,16 @@
                         alert("支付已创建，等待服务器批准。ID: " + paymentId);
                     },
                     onReadyForServerCompletion: (paymentId, txid) => {
-                        alert("支付圆满完成！交易哈希: " + txid);
+                        alert("支付成功！交易哈希: " + txid);
                     },
-                    onCancel: (paymentId) => { alert("用户取消了支付"); },
+                    onCancel: (paymentId) => { alert("已取消支付"); },
                     onError: (error, payment) => { alert("支付错误: " + error.message); }
                 };
 
-                alert("正在拉起钱包...");
+                alert("正在拉起官方钱包，请稍候...");
                 Pi.createPayment(paymentData, callbacks);
             } catch (err) {
-                alert("发起支付失败: " + err.message);
+                alert("拉起钱包失败: " + err.message);
             }
         }
 
@@ -92,6 +93,5 @@
     </script>
 </body>
 </html>
-
 
 
