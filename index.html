@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>麦霸面包店 - Pi 测试</title>
+    <title>麦霸面包店 - 官方测试版</title>
     
     <meta name="pi-sdk-version" content="2.0">
     <link rel="canonical" href="https://1qqq844.github.io/my-pi-app/">
@@ -12,91 +12,90 @@
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     
     <style>
-        body { font-family: sans-serif; text-align: center; padding-top: 50px; background-color: #f4f4f9; }
-        .card { background: white; margin: 20px auto; padding: 20px; width: 85%; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 1px solid #ddd; }
-        h1 { color: #673ab7; }
-        #user-display { color: #2e7d32; font-weight: bold; margin: 10px 0; }
-        button { width: 80%; padding: 15px; font-size: 18px; cursor: pointer; background: #673ab7; color: white; border: none; border-radius: 8px; margin: 10px 0; font-weight: bold; }
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; text-align: center; padding: 40px 20px; background-color: #f8f9fa; color: #333; }
+        .card { background: white; margin: 0 auto 20px; padding: 25px; max-width: 400px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+        h1 { color: #673ab7; margin-bottom: 5px; }
+        #user-display { color: #2e7d32; font-weight: bold; margin: 15px 0; min-height: 20px; }
+        button { width: 100%; padding: 16px; font-size: 18px; cursor: pointer; background: #673ab7; color: white; border: none; border-radius: 10px; margin: 10px 0; font-weight: bold; transition: 0.3s; }
         button:active { background: #512da8; transform: scale(0.98); }
-        .status { color: #666; font-size: 12px; margin-top: 30px; background: #eee; padding: 10px; }
+        .btn-pay { background: #ef6c00; }
+        .status { font-size: 12px; color: #888; margin-top: 20px; padding: 10px; border-top: 1px solid #eee; }
     </style>
 </head>
 <body>
 
     <div class="card">
         <h1>麦霸面包店 🥐</h1>
-        <div id="user-display">未登录状态</div>
-        <button onclick="login()">1. 点击登录并授权</button>
+        <p>每一份面包都是现做现发</p>
+        <div id="user-display">等待登录授权...</div>
+        
+        <button onclick="login()">第一步：登录并开启支付权限</button>
     </div>
 
     <div class="card">
-        <h3>今日下单</h3>
+        <h3>下单体验</h3>
         <p>手工奶油面包：0.1 Test-Pi</p>
-        <button onclick="transferPi()" style="background: #ef6c00;">2. 发起支付</button>
+        <button class="btn-pay" onclick="transferPi()">第二步：发起下单支付</button>
     </div>
 
-    <div id="status-box" class="status">SDK 状态: 正在初始化...</div>
+    <div id="status-box" class="status">SDK 状态: 检查环境中...</div>
 
     <script>
         const Pi = window.Pi;
 
-        // 初始化 SDK
+        // 1. 初始化 SDK
         try {
-            // 在 Pi Browser 真实环境测试，sandbox 设为 false
             Pi.init({ version: "2.0", sandbox: false });
             document.getElementById('status-box').innerText = "SDK 状态: 初始化成功";
         } catch (err) {
-            document.getElementById('status-box').innerText = "SDK 状态: 初始化失败";
+            document.getElementById('status-box').innerText = "SDK 状态: 初始化失败 (请在 Pi Browser 中使用)";
         }
 
-        // 登录与授权函数
+        // 2. 授权函数：解决 "payments scope" 报错的关键
         async function login() {
-            alert("正在准备调起官方授权窗口..."); 
+            alert("正在向 Pi 网络申请授权...");
             try {
-                // 必须包含 'payments' 权限才能在后续调起钱包
+                // 必须同时包含 username 和 payments
                 const scopes = ['username', 'payments']; 
                 const user = await Pi.authenticate(scopes, onIncompletePaymentFound);
                 
-                // 成功授权后显示用户名
-                document.getElementById('user-display').innerText = "欢迎回来: " + user.user.username;
-                alert("授权成功！您现在可以点击下方支付按钮了。");
+                document.getElementById('user-display').innerText = "欢迎，店长 " + user.user.username;
+                alert("授权成功！现在您可以点击下方的支付按钮了。");
             } catch (err) {
-                alert("授权失败原因: " + err.message);
+                alert("授权失败: " + err.message);
             }
         }
 
-        // 发起支付函数
+        // 3. 支付函数
         async function transferPi() {
             try {
                 const paymentData = {
                     amount: 0.1,
-                    memo: "购买麦霸手工面包",
-                    metadata: { orderId: "Bread-" + Math.floor(Date.now() / 1000) }
+                    memo: "麦霸面包店-下单测试",
+                    metadata: { orderId: "Order-" + Date.now() }
                 };
 
                 const callbacks = {
                     onReadyForServerApproval: (paymentId) => {
-                        alert("订单已创建！等待服务器批准。ID: " + paymentId);
+                        alert("订单已创建！等待后台批准。\nID: " + paymentId);
                     },
                     onReadyForServerCompletion: (paymentId, txid) => {
-                        alert("支付成功！感谢购买。交易哈希: " + txid);
+                        alert("支付成功！\n交易哈希: " + txid);
                     },
                     onCancel: (paymentId) => { console.log("支付取消"); },
-                    onError: (error, payment) => { alert("支付错误: " + error.message); }
+                    onError: (error, payment) => { alert("支付过程出错: " + error.message); }
                 };
 
-                alert("准备拉起官方钱包...");
-                // 调用 SDK 发起支付
+                alert("正在拉起官方钱包...");
                 Pi.createPayment(paymentData, callbacks);
             } catch (err) {
-                // 此时应弹出你之前看到的 payments scope 报错详情
-                alert("拉起钱包失败具体原因: " + err.message + " (代码: " + err.code + ")");
+                // 如果还提示 scope 错误，说明第一步没跑通
+                alert("无法下单: " + err.message + "\n请先点上方的登录按钮。");
             }
         }
 
-        // 未完成支付处理回调 (SDK 要求)
         function onIncompletePaymentFound(payment) {
-            console.log("处理未完成支付: ", payment);
+            console.log("处理未完成订单: ", payment);
         };
     </script>
 </body>
