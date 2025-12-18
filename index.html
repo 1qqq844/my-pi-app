@@ -55,7 +55,10 @@
                 const user = await Pi.authenticate(scopes, onIncompletePaymentFound);
                 document.getElementById('user-info').innerText = "你好, " + user.user.username;
                 alert("登录成功！欢迎：" + user.user.username);
-            } catch (err) {
+            } catch (err) {} catch (err) {
+    // 这样弹出的提示会告诉你具体的错误原因
+    alert("拉起钱包失败具体原因: " + err.message + " (代码: " + err.code + ")");
+}
                 alert("登录失败: " + JSON.stringify(err));
             }
         }
@@ -93,5 +96,6 @@
     </script>
 </body>
 </html>
+
 
 
