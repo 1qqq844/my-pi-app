@@ -1,11 +1,11 @@
-
 <!DOCTYPE html>
 <html lang="zh-CN">
-<head<meta name="pi-domain-verification" content="1qqq844.github.io/my-pi-app/">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>麦霸面包店 - 官方测试版</title>
     
+    <meta name="pi-domain-verification" content="1qqq844.github.io/my-pi-app/">
     <meta name="pi-sdk-version" content="2.0">
     <link rel="canonical" href="https://1qqq844.github.io/my-pi-app/">
 
@@ -43,30 +43,28 @@
     <script>
         const Pi = window.Pi;
 
-        // 1. 初始化 SDK
+        // 初始化 SDK
         try {
             Pi.init({ version: "2.0", sandbox: false });
             document.getElementById('status-box').innerText = "SDK 状态: 初始化成功";
         } catch (err) {
-            document.getElementById('status-box').innerText = "SDK 状态: 初始化失败 (请在 Pi Browser 中使用)";
+            document.getElementById('status-box').innerText = "SDK 状态: 初始化失败";
         }
 
-        // 2. 授权函数：解决 "payments scope" 报错的关键
+        // 登录授权流程
         async function login() {
             alert("正在向 Pi 网络申请授权...");
             try {
-                // 必须同时包含 username 和 payments
                 const scopes = ['username', 'payments']; 
                 const user = await Pi.authenticate(scopes, onIncompletePaymentFound);
-                
                 document.getElementById('user-display').innerText = "欢迎，店长 " + user.user.username;
-                alert("授权成功！现在您可以点击下方的支付按钮了。");
+                alert("授权成功！");
             } catch (err) {
                 alert("授权失败: " + err.message);
             }
         }
 
-        // 3. 支付函数
+        // 支付请求流程
         async function transferPi() {
             try {
                 const paymentData = {
@@ -74,31 +72,19 @@
                     memo: "麦霸面包店-下单测试",
                     metadata: { orderId: "Order-" + Date.now() }
                 };
-
                 const callbacks = {
-                    onReadyForServerApproval: (paymentId) => {
-                        alert("订单已创建！等待后台批准。\nID: " + paymentId);
-                    },
-                    onReadyForServerCompletion: (paymentId, txid) => {
-                        alert("支付成功！\n交易哈希: " + txid);
-                    },
+                    onReadyForServerApproval: (paymentId) => { alert("订单已创建: " + paymentId); },
+                    onReadyForServerCompletion: (paymentId, txid) => { alert("支付成功！"); },
                     onCancel: (paymentId) => { console.log("支付取消"); },
-                    onError: (error, payment) => { alert("支付过程出错: " + error.message); }
+                    onError: (error, payment) => { alert("支付错误: " + error.message); }
                 };
-
-                alert("正在拉起官方钱包...");
                 Pi.createPayment(paymentData, callbacks);
             } catch (err) {
-                // 如果还提示 scope 错误，说明第一步没跑通
-                alert("无法下单: " + err.message + "\n请先点上方的登录按钮。");
+                alert("拉起失败: " + err.message);
             }
         }
 
-        function onIncompletePaymentFound(payment) {
-            console.log("处理未完成订单: ", payment);
-        };
+        function onIncompletePaymentFound(payment) { console.log("未完成支付", payment); };
     </script>
 </body>
 </html>
-
-
